@@ -1,2 +1,2 @@
-# OBDAnnotator
-Occlusion, blur, deformation annotator for tracking decision making
+# ODBAnnotator
+Occlusion, deformation, blur annotator for tracking decision making

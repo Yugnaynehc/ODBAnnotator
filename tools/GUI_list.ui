@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>800</width>
+    <height>600</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>OBDAnnotator</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QGridLayout" name="gridLayout">
+    <item row="1" column="0">
+     <layout class="QHBoxLayout" name="buttonLayout">
+      <item>
+       <widget class="QPushButton" name="nextSeq">
+        <property name="text">
+         <string>下一序列</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="prevSeq">
+        <property name="text">
+         <string>上一序列</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="nextPage">
+        <property name="text">
+         <string>下一页</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="prevPage">
+        <property name="text">
+         <string>上一页</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item row="0" column="0">
+     <layout class="QHBoxLayout" name="mainLayout" stretch="1,6">
+      <property name="spacing">
+       <number>6</number>
+      </property>
+      <property name="sizeConstraint">
+       <enum>QLayout::SetDefaultConstraint</enum>
+      </property>
+      <item>
+       <widget class="QListWidget" name="seqList"/>
+      </item>
+      <item>
+       <layout class="QVBoxLayout" name="rightLayout" stretch="1,20">
+        <item>
+         <layout class="QHBoxLayout" name="labelLayout">
+          <item>
+           <widget class="QLabel" name="occLabel">
+            <property name="text">
+             <string>Occlusion</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="blurLabel">
+            <property name="text">
+             <string>Blur</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="deforLabel">
+            <property name="text">
+             <string>Deformation</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="occblurLabel">
+            <property name="text">
+             <string>Occlusion + Blur</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="imageLayout">
+          <item>
+           <widget class="QListWidget" name="occList"/>
+          </item>
+          <item>
+           <widget class="QListWidget" name="blurList"/>
+          </item>
+          <item>
+           <widget class="QListWidget" name="deforList"/>
+          </item>
+          <item>
+           <widget class="QListWidget" name="occblurList"/>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </item>
+   </layout>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
