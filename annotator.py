@@ -27,7 +27,7 @@ class MyApp(QtGui.QMainWindow, uiMainWindow):
         QtGui.QMainWindow.__init__(self)
         uiMainWindow.__init__(self)
         self.setupUi(self)
-        self.datasetRoot = os.path.join(dataRoot, 'OTB100')
+        self.datasetRoot = os.path.join(dataRoot, 'benchmarkDatasets')
         self.attrRoot = os.path.join(dataRoot, 'otb-1occ-2def-3blur-4OccBlur')
 
         # Init sequence list
@@ -42,6 +42,9 @@ class MyApp(QtGui.QMainWindow, uiMainWindow):
 
         # Init attribution data
         self.labels = None
+
+        # Init ground-truth data
+        self.gts = None
 
     def initSeqList(self):
         self.seq_list = sorted(os.listdir(self.datasetRoot))
@@ -99,12 +102,16 @@ class MyApp(QtGui.QMainWindow, uiMainWindow):
         if self.labels is not None:
             self.saveAttrData()
 
-        # Set attribution button checkable and clean state
-        for annotatorWidget in self.annotatorWidgets:
-            annotatorWidget.setAttrCheckable()
-
-        # Read and show the attribution data
+        # Read the attribution data
         self.readAttrData()
+
+        # Set attribution button checkable, clean attribution button state and
+        # pass attribution list to every annotator widget.
+        for annotatorWidget in self.annotatorWidgets:
+            annotatorWidget.initAttrButton()
+            annotatorWidget.setLabels(self.labels)
+
+        # Show the attribution data
         self.showAttrData()
 
     def showImages(self):
@@ -248,9 +255,10 @@ class ImageWidget(QtGui.QLabel):
 
 class AnnotatorWidget(QtGui.QWidget):
 
-    def __init__(self, frameID=None):
+    def __init__(self, frameID=None, labels=None):
         super(AnnotatorWidget, self).__init__()
         self.frameID = frameID
+        self.labels = labels
         self.layout = QtGui.QVBoxLayout()
         self.imageWidget = ImageWidget()
 
@@ -276,6 +284,12 @@ class AnnotatorWidget(QtGui.QWidget):
     def setFrameID(self, frameID):
         self.frameID = frameID
 
+    def setLabels(self, labels):
+        '''
+        Let this widget can see attribution list of certain sequence.
+        '''
+        self.labels = labels
+
     def setImage(self, img):
         self.imageWidget.setImage(img)
 
@@ -283,19 +297,23 @@ class AnnotatorWidget(QtGui.QWidget):
         if attr != 0:
             self.buttons[attr - 1].setChecked(True)
 
-    def setAttrCheckable(self):
+    def initAttrButton(self):
+        '''
+        Set attribution button checkable, and clean attribution button state
+        '''
         self.buttonGroup.setExclusive(False)
         for button in self.buttons:
             button.setCheckable(True)
             button.setChecked(False)
-        self.buttonGroup.setExclusive(False)
+        self.buttonGroup.setExclusive(True)
 
     def attrSelected(self):
         print(self.frameID, self.buttonGroup.checkedId())
+        self.labels[self.frameID] = self.buttonGroup.checkedId()
 
 if __name__ == '__main__':
     app = QtGui.QApplication(sys.argv)
-    dataRoot = '/home/feather/Dataset'
+    dataRoot = 'f:\otb'
     window = MyApp(dataRoot)
     window.show()
     sys.exit(app.exec_())
