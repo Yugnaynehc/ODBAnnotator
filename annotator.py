@@ -81,6 +81,8 @@ class MyApp(QtGui.QMainWindow, uiMainWindow):
         self.nextPage.clicked.connect(self.showNextPage)
         self.prevSeq.setEnabled(False)
         self.nextSeq.setEnabled(False)
+        self.saveButton.clicked.connect(self.saveAttrData)
+        self.saveButton.setEnabled(False)
 
     def initSeq(self, item):
         '''
@@ -123,6 +125,9 @@ class MyApp(QtGui.QMainWindow, uiMainWindow):
 
         # Show the attribution data
         self.showAttrData()
+
+        # Enable save button
+        self.saveButton.setEnabled(True)
 
     def readGTs(self):
         '''
@@ -279,15 +284,12 @@ class ImageWidget(QtGui.QLabel):
         Read the image by PIL, and crop this image by input bounding box,
         then covert the result to QPixmap format.
         '''
-        # img = Image.open(imagePath)
-        # img = img.crop(bbox)
-        # self.pixmap = QtGui.QPixmap.fromImage(ImageQt(img))
         self.pixmap = QtGui.QPixmap(imagePath)
-        self.bbox = bbox
-        # p = QtGui.QPainter(self.pixmap)
-        # p.drawRect(100, 100, 10, 10)
-        # p.end()
-        # self.setPixmap(self.pixmap)
+        # Draw ground-truth as rectangle
+        painter = QtGui.QPainter(self.pixmap)
+        pen = QtGui.QPen(QtGui.QColor('red'), 3)
+        painter.setPen(pen)
+        painter.drawRect(*bbox)
 
     def paintEvent(self, event):
         if self.pixmap is None:
@@ -295,7 +297,6 @@ class ImageWidget(QtGui.QLabel):
             return
         size = self.size()
         painter = QtGui.QPainter(self)
-        # painter.drawRect(*self.bbox)
         point = QtCore.QPoint(0, 0)
         scaledPix = self.pixmap.scaled(size, Qt.KeepAspectRatio,
                                        transformMode=Qt.SmoothTransformation)
