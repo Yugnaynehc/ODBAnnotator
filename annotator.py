@@ -75,14 +75,22 @@ class MyApp(QtGui.QMainWindow, uiMainWindow):
         self.endIdx = None
 
     def initControlButtons(self):
+        '''
+        Set all control buttons not clickable, and ignore all key press evnet.
+        '''
         self.prevPage.setEnabled(False)
+        self.prevPage.keyPressEvent = lambda x: x.ignore()
         self.prevPage.clicked.connect(self.showPrevPage)
         self.nextPage.setEnabled(False)
+        self.nextPage.keyPressEvent = lambda x: x.ignore()
         self.nextPage.clicked.connect(self.showNextPage)
         self.prevSeq.setEnabled(False)
+        self.prevSeq.keyPressEvent = lambda x: x.ignore()
         self.nextSeq.setEnabled(False)
-        self.saveButton.clicked.connect(self.saveAttrData)
+        self.nextSeq.keyPressEvent = lambda x: x.ignore()
         self.saveButton.setEnabled(False)
+        self.saveButton.keyPressEvent = lambda x: x.ignore()
+        self.saveButton.clicked.connect(self.saveAttrData)
 
     def initSeq(self, item):
         '''
@@ -234,7 +242,7 @@ class MyApp(QtGui.QMainWindow, uiMainWindow):
         '''
         self.startIdx = self.endIdx
         self.endIdx = self.startIdx + self.pageSize
-        if self.endIdx > self.seqLen:
+        if self.endIdx >= self.seqLen:
             # Reset indeies
             self.endIdx = self.seqLen
             self.startIdx = self.endIdx - self.pageSize
@@ -354,6 +362,12 @@ class AnnotatorWidget(QtGui.QWidget):
     def setAttr(self, attr):
         if attr != 0:
             self.buttons[attr - 1].setChecked(True)
+        else:
+            # Clean attribution button state
+            self.buttonGroup.setExclusive(False)
+            for button in self.buttons:
+                button.setChecked(False)
+            self.buttonGroup.setExclusive(True)
 
     def initAttrButton(self):
         '''
@@ -363,6 +377,8 @@ class AnnotatorWidget(QtGui.QWidget):
         for button in self.buttons:
             button.setCheckable(True)
             button.setChecked(False)
+            # Disable key event handler for this button
+            button.keyPressEvent = lambda x: x.ignore()
         self.buttonGroup.setExclusive(True)
 
     def attrSelected(self):
