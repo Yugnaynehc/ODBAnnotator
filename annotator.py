@@ -183,7 +183,6 @@ class MyApp(QtGui.QMainWindow, uiMainWindow):
                     self.labels[i] = rawData[i]
             else:
                 self.labels = rawData
-            # print(self.labels)
         except IOError, e:
             print('When init sequence %s, no mat file found' % self.currentSeq)
             self.labels = [0 for i in range(self.seqLen)]
@@ -276,32 +275,21 @@ class MyApp(QtGui.QMainWindow, uiMainWindow):
             self.saveAndQuit()
 
 
-class ImageWidget(QtGui.QLabel):
+class ResizeImage(QtGui.QLabel):
+    '''
+    A widget that display a resizable image.
+    '''
 
-    def __init__(self, imagePath=None, bbox=None):
-        super(ImageWidget, self).__init__()
+    def __init__(self, pixmap=None):
+        super(ResizeImage, self).__init__()
         self.setFrameStyle(QtGui.QFrame.StyledPanel)
-        if imagePath is not None and bbox is not None:
-            self.setImage(imagePath, bbox)
-        else:
-            self.pixmap = None
-            self.setText('No sequence selected')
-
-    def setImage(self, imagePath, bbox):
-        '''
-        Read the image by PIL, and crop this image by input bounding box,
-        then covert the result to QPixmap format.
-        '''
-        self.pixmap = QtGui.QPixmap(imagePath)
-        # Draw ground-truth as rectangle
-        painter = QtGui.QPainter(self.pixmap)
-        pen = QtGui.QPen(QtGui.QColor('red'), 3)
-        painter.setPen(pen)
-        painter.drawRect(*bbox)
+        self.pixmap = pixmap
+        # if pixmap is not None:
+        #     self.setPixmap(pixmap)
 
     def paintEvent(self, event):
         if self.pixmap is None:
-            super(ImageWidget, self).paintEvent(event)
+            super(ResizeImage, self).paintEvent(event)
             return
         size = self.size()
         painter = QtGui.QPainter(self)
@@ -315,7 +303,79 @@ class ImageWidget(QtGui.QLabel):
         painter.drawPixmap(point, scaledPix)
 
 
+class ImageWindow(QtGui.QDialog):
+    '''
+    A window that display a resizable image.
+    '''
+
+    def __init__(self, pixmap, title):
+        super(ImageWindow, self).__init__()
+        self.layout = QtGui.QVBoxLayout(self)
+
+        self.imageLabel = ResizeImage(pixmap)
+        self.layout.addWidget(self.imageLabel)
+
+        # Init annotator buttons
+        # self.buttonLayout = QtGui.QHBoxLayout()
+        # self.buttonLayout.setSpacing(0)
+        # self.buttonGroup = QtGui.QButtonGroup()
+        # self.buttons = []
+        # labels = ['O', 'D', 'B', 'OB']
+        # label_colors = ['LightCoral', 'Chartreuse', 'Aquamarine', 'CadetBlue']
+        # for i in range(0, 4):
+        #     button = QtGui.QRadioButton(labels[i])
+        #     button.setStyleSheet('QRadioButton:checked { background-color: %s }'
+        #                          % label_colors[i])
+        #     button.setCheckable(True)
+        #     if i == attr - 1:
+        #         button.setChecked(True)
+        #     self.buttons.append(button)
+        #     self.buttonLayout.addWidget(button)
+        #     self.buttonGroup.addButton(button, i + 1)
+        # self.layout.addLayout(self.buttonLayout)
+
+        self.setWindowTitle(title)
+        self.resize(800, 600)
+
+
+class ImageWidget(ResizeImage):
+    '''
+    A widget that display a resizable image, and show the origin (big) image when click it.
+    '''
+
+    def __init__(self, imagePath=None, bbox=None):
+        super(ImageWidget, self).__init__()
+        if imagePath is not None:
+            self.setImage(imagePath, bbox)
+            self.title = imagePath
+        else:
+            self.pixmap = None
+            self.setText('No sequence selected')
+            self.title = 'No image data.'
+
+    def setImage(self, imagePath, bbox):
+        '''
+        Read the image by PIL, and crop this image by input bounding box,
+        then covert the result to QPixmap format.
+        '''
+        self.pixmap = QtGui.QPixmap(imagePath)
+        self.title = imagePath
+        if bbox is not None:
+            # Draw ground-truth as rectangle
+            painter = QtGui.QPainter(self.pixmap)
+            pen = QtGui.QPen(QtGui.QColor('red'), 2)
+            painter.setPen(pen)
+            painter.drawRect(*bbox)
+
+    def mouseReleaseEvent(self, event):
+        imgWindow = ImageWindow(self.pixmap, self.title)
+        imgWindow.exec_()
+
+
 class AnnotatorWidget(QtGui.QWidget):
+    '''
+    A widget display the annotated frame image and annotated buttons.
+    '''
 
     def __init__(self, frameID=None, labels=None):
         super(AnnotatorWidget, self).__init__()
@@ -387,7 +447,6 @@ class AnnotatorWidget(QtGui.QWidget):
         corresponding frame.
 
         '''
-        # print(self.frameID, self.buttonGroup.checkedId())
         if self.labels is not None:
             self.labels[self.frameID] = self.buttonGroup.checkedId()
 
