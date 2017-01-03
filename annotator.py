@@ -35,8 +35,8 @@ class MyApp(QtGui.QMainWindow, uiMainWindow):
         QtGui.QMainWindow.__init__(self)
         uiMainWindow.__init__(self)
         self.setupUi(self)
-        self.datasetRoot = os.path.join(dataRoot, 'benchmarkDatasets')
-        self.attrRoot = os.path.join(dataRoot, 'otb-1occ-2def-3blur-4OccBlur')
+        self.datasetRoot = os.path.join(dataRoot, 'imageFiles')
+        self.attrRoot = os.path.join(dataRoot, 'annotateFiles')
 
         self.log = False
 
@@ -508,7 +508,7 @@ class AnnotatorWidget(QtGui.QWidget):
 
 if __name__ == '__main__':
     app = QtGui.QApplication(sys.argv)
-    dataRoot = '/home/feather/Dataset/otb'
+    dataRoot = './data'
     window = MyApp(dataRoot)
     window.show()
     sys.exit(app.exec_())
