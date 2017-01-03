@@ -23,6 +23,11 @@ from scipy.io import loadmat, savemat
 qtCreatorFile = 'GUI.ui'
 uiMainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
+validExt = ['jpg', 'JPG', 'jpeg', 'JPEG', 'png', 'PNG']
+
+# Some sequence has 2 ground-truth file
+specialSeq = ['Skating2', 'Jogging']
+
 
 class MyApp(QtGui.QMainWindow, uiMainWindow):
 
@@ -32,6 +37,11 @@ class MyApp(QtGui.QMainWindow, uiMainWindow):
         self.setupUi(self)
         self.datasetRoot = os.path.join(dataRoot, 'benchmarkDatasets')
         self.attrRoot = os.path.join(dataRoot, 'otb-1occ-2def-3blur-4OccBlur')
+
+        self.log = False
+
+        # Read frame range file
+        self.initFrameRange()
 
         # Init sequence list
         self.initSeqList()
@@ -50,8 +60,22 @@ class MyApp(QtGui.QMainWindow, uiMainWindow):
         # Init ground-truth data
         self.gts = None
 
+    def initFrameRange(self):
+        self.frameRangeFile = os.path.join(dataRoot, 'frameRange.txt')
+        f = open(self.frameRangeFile)
+        self.frameRange = {}
+        for l in list(f):
+            raw = l.split(' ')
+            # Every line format is [frame_name, start_frame, end_frame]
+            self.frameRange[raw[0]] = [int(raw[1]), int(raw[2])]
+
     def initSeqList(self):
-        self.seq_list = sorted(os.listdir(self.datasetRoot))
+        self.seq_list = os.listdir(self.datasetRoot)
+        for seq in specialSeq:
+            self.seq_list.remove(seq)
+            for i in range(1, 3):
+                self.seq_list.append('%s-%d' % (seq, i))
+        self.seq_list = sorted(self.seq_list)
         for seq in self.seq_list:
             if seq == 'anno' or seq == 'MEEM':
                 continue
@@ -97,14 +121,15 @@ class MyApp(QtGui.QMainWindow, uiMainWindow):
         Init and show the first page of the current sequence,
         then read the attribution data of it.
         '''
-        self.currentSeq = str(item.text())
-        # Read ground-truth of this sequence
-        self.readGTs()
+        # If some sequence had been loaded before, the attribution changes need
+        # to be saved.
+        if self.currentSeq is not None:
+            self.saveAttrData()
 
-        # Prepare images of this sequence
-        self.seqImgDir = os.path.join(self.datasetRoot, self.currentSeq, 'img')
-        self.imgNames = sorted(os.listdir(self.seqImgDir))
-        self.seqLen = len(self.imgNames)
+        self.currentSeq = str(item.text())
+
+        # Get current sequence's frames and GTs
+        self.initFrameAndGT()
 
         # Init page indeies
         self.startIdx = 0
@@ -116,11 +141,6 @@ class MyApp(QtGui.QMainWindow, uiMainWindow):
             self.endIdx = self.pageSize
             self.nextPage.setEnabled(True)
         self.showImages()
-
-        # If some sequence had been loaded before, the attribution changes need
-        # to be saved.
-        if self.labels is not None:
-            self.saveAttrData()
 
         # Read the attribution data
         self.readAttrData()
@@ -137,18 +157,51 @@ class MyApp(QtGui.QMainWindow, uiMainWindow):
         # Enable save button
         self.saveButton.setEnabled(True)
 
-    def readGTs(self):
+    def initFrameAndGT(self):
         '''
-        Read the ground-truth of current sequence.
+        Read the frames and ground-truths of current sequence.
         '''
-        gtFilePath = os.path.join(
-            self.datasetRoot, self.currentSeq, 'groundtruth_rect.txt')
+        # Prepare images of current sequence
+        # First check current sequence is special or not
+        probe = self.currentSeq.split('-')
+        if len(probe) == 2:
+            # if current sequence is the special sequence
+            self.currentSeqSpecial = True
+            self.seqImgDir = os.path.join(self.datasetRoot, probe[0], 'img')
+        else:
+            self.currentSeqSpecial = False
+            self.seqImgDir = os.path.join(self.datasetRoot, self.currentSeq, 'img')
+        # Get current sequence's frame range
+        frs, fre = self.frameRange[self.currentSeq]
+
+        # Get current sequence's frame names (need filter some files)
+        self.imgNames = [fn for fn in os.listdir(self.seqImgDir) if any(
+            fn.endswith(ext) for ext in validExt)]
+        self.imgNames = sorted(self.imgNames)
+        self.firstFrame = int(self.imgNames[0].split('.')[0])
+        frs -= self.firstFrame
+        fre -= self.firstFrame
+        self.imgNames = self.imgNames[frs:fre]
+        self.seqLen = len(self.imgNames)
+
+        # Read ground-truth of this sequence
+        if self.currentSeqSpecial:
+            gtFilePath = os.path.join(
+                self.datasetRoot, probe[0], 'groundtruth_rect.%s.txt' % probe[1])
+        else:
+            gtFilePath = os.path.join(
+                self.datasetRoot, self.currentSeq, 'groundtruth_rect.txt')
         f = open(gtFilePath)
         seq_pattern = r'[\d]+'
         # origin gt format is [x, y, w, h]
-        self.gts = [map(int, re.findall(seq_pattern, line)) for line in list(f)]
-        # convert gt format to [x1, y1, x2, y2]
-        # self.gts = [[x, y, x + w, y + h] for (x, y, w, h) in self.gts]
+        self.gts = [map(int, re.findall(seq_pattern, line))
+                    for line in list(f)]
+        gtrs, gtre = frs, fre
+        if self.currentSeq == 'David':
+            # Sequence 'David' is very special!
+            gtrs -= 299
+            gtre -= 299
+        self.gts = self.gts[gtrs:gtre]
 
     def showImages(self):
         '''
@@ -170,14 +223,16 @@ class MyApp(QtGui.QMainWindow, uiMainWindow):
         self.seqAttrFile = os.path.join(self.attrRoot, self.currentSeq)
         try:
             attrData = loadmat(self.seqAttrFile)['label']
-            print('Succesfully load mat file for %s' % self.currentSeq)
+            if self.log:
+                print('Succesfully load mat file for %s' % self.currentSeq)
             rawData = [label[0] for label in attrData]
             rawDataLen = len(rawData)
             if rawDataLen < self.seqLen:
                 # If some frame have not been annotated, then use 0 to fill it.
-                print('Only %d frames of sequence %s have been annotated before.' %
-                      (rawDataLen, self.currentSeq))
-                print('Padding the attribution data by 0')
+                if self.log:
+                    print('Only %d frames of sequence %s have been annotated before.' %
+                          (rawDataLen, self.currentSeq))
+                    print('Padding the attribution data by 0')
                 self.labels = [0 for i in range(self.seqLen)]
                 for i in range(rawDataLen):
                     self.labels[i] = rawData[i]
@@ -211,7 +266,8 @@ class MyApp(QtGui.QMainWindow, uiMainWindow):
                 # print(saveData)
                 target = self.seqAttrFile + '.mat'
                 savemat(target, {'label': saveData}, do_compression=True)
-                print('Save to %s\n' % target)
+                if self.log:
+                    print('Save to %s\n' % target)
         except Exception, e:
             print('When save attribution data, ')
             print(e)
