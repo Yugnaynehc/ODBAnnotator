@@ -8,8 +8,11 @@ Occlusion, deformation, blur annotator for tracking decision making.
 ## Usage
 1. Prepare raw data first: 
     - link OTB datasets directory to ./data/imageFiles
+    
         ln -s $YOUR_OTB_PATH ./data/imageFiles
+        
     - link annotated mat file directory to ./data/annotateFiles
+    
         ln -s $YOUR_MAT_PATH ./data/annotateFiles
 
 2. Some keyboard shortcut can be used:
